@@ -6,8 +6,8 @@
 
 typedef struct matrix_t {
     mod26 **values;
-    int x; // filas
-    int y; // columnas
+    int x;
+    int y;
 } matrix;
 
 int matrix_create(matrix *this, int x, int y);

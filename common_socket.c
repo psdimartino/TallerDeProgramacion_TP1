@@ -111,6 +111,5 @@ int socket_read_string(socket_t *self, char **data) {
     while ((rec += recv(self->sfd, &(*data)[rec], l - rec , 0)) < l) {
         if (rec == 0) return 1;
     }
-    // printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
     return 0;
 }

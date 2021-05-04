@@ -1,9 +1,6 @@
 #include "server_matrix.h"
 #include <stdio.h>
 
-// x: filas
-// y: columnas
-
 int matrix_create(matrix *this, int x, int y) {
   if (!this) {
       return 1;
@@ -73,6 +70,5 @@ int matrix_multiply(matrix *result, matrix matrix_a, matrix matrix_b) {
       }
     }
   }
-
   return 0;
 }

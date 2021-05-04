@@ -56,7 +56,7 @@ int encoder_encode(encoder *self, string input, string *output) {
     matrix_create(&inputVector, self->vector_len, 1);
     *output = calloc(outputSize + 1, sizeof(char));
     curateInput(input);
-    for (int i = 0; i < strlen((char *)input); i+=self->vector_len) {
+    for (int i = 0; i < strlen(input); i+=self->vector_len) {
         encoder_setMatrixWithString(inputVector, &input[i]);
         matrix_multiply(&outputVector, self->key, inputVector);
         encoder_getStringFromMatrix(auxString, outputVector);

@@ -30,9 +30,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     while ((socket_read_string(&skt, &input)) != 1) {
-        // printf("recived: <%s>\n", input);
         encoder_encode(&hill, input, &output);
-        // printf("encoded: <%s>\n", output);
         if ( (socket_send_string(&skt, output)) == -1 ) {
             fprintf(stderr, "socket_read failed\n");
             socket_uninit(&skt);
