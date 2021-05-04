@@ -48,30 +48,28 @@ int matrix_get(matrix this, int x, int y) {
   return this.values[x][y];
 }
 
-int matrix_set(matrix this, int x, int y, mod26 value) {
-  if (this.x <= x || this.y <= y) {
+int matrix_set(matrix *this, int x, int y, mod26 value) {
+  if (this->x <= x || this->y <= y) {
     return -1;
   }
-  this.values[x][y] = value;
+  this->values[x][y] = value;
 
   return 0;
 }
 
 
 int matrix_multiply(matrix *result, matrix matrix_a, matrix matrix_b) {
-  mod26 a = 0, b = 0, mult = 0;
-  int i, j, k;
   if (matrix_create(result, matrix_a.x, matrix_b.y)) {
     return 1;
   }
 
-  for (i = 0; i < matrix_a.x; i++) {
-    for (j = 0; j < matrix_b.y; j++) {
-      for (k = 0; k < matrix_a.y; k++) {
-        a = matrix_get(matrix_a, i, k);
-        b = matrix_get(matrix_b, k, j);
-        mult = mod26_multiply(a, b);
-        matrix_set(*result, i, j, mod26_sum(result->values[i][j], mult));
+  for (int i = 0; i < matrix_a.x; i++) {
+    for (int j = 0; j < matrix_b.y; j++) {
+      for (int k = 0; k < matrix_a.y; k++) {
+        mod26 a = matrix_get(matrix_a, i, k);
+        mod26 b = matrix_get(matrix_b, k, j);
+        mod26 mult = mod26_multiply(a, b);
+        matrix_set(result, i, j, mod26_sum(result->values[i][j], mult));
       }
     }
   }

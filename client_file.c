@@ -20,7 +20,7 @@ int file_getLine(file *self, char **output) {
     if ((length = getline(output, &size, self->file)) == -1) {
         return 1;
     }
-    (*output)[length-1] = '\0';
+    (*output)[length-1] = '\n';
     return 0;
 }
 

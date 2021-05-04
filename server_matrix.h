@@ -16,7 +16,7 @@ int matrix_delete(matrix *this);
 
 int matrix_get(matrix this, int x, int y);
 
-int matrix_set(matrix this, int x, int y, mod26 value);
+int matrix_set(matrix *this, int x, int y, mod26 value);
 
 int matrix_multiply(matrix *result, matrix matrix_a, matrix matrix_b);
 

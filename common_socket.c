@@ -82,17 +82,14 @@ int socket_uninit(socket_t *self ) {
     return 0;
 }
 
-
 int socket_send_string(socket_t *self, const char *data) {
-    int sent = 0, l = strlen(data) + 1;
+    int sent = 0, l = strlen(data);
     unsigned char size[2] = {l / 256, l % 256};  // Int to unsigned char
     // Send 2 bytes with string length
-    while ((sent+=send(self->sfd, &size[sent], 2 - sent, MSG_NOSIGNAL)) < 2) {
-    }
+    while ((sent+=send(self->sfd, &size[sent], 2 - sent, MSG_NOSIGNAL)) < 2) {}
     // Send string
     sent = 0;
-    while ((sent+=send(self->sfd, &data[sent], l - sent, MSG_NOSIGNAL)) < l) {
-    }
+    while ((sent+=send(self->sfd, &data[sent], l - sent, MSG_NOSIGNAL)) < l) {}
     return 0;
 }
 
@@ -112,9 +109,8 @@ int socket_read_string(socket_t *self, char **data) {
         return 1;
     }
     while ((rec += recv(self->sfd, &(*data)[rec], l - rec , 0)) < l) {
-        if (rec == 0) {
-            return 1;
-        }
+        if (rec == 0) return 1;
     }
+    // printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
     return 0;
 }
