@@ -90,6 +90,24 @@ int socket_send_string(socket_t *self, const char *data) {
     // Send string
     sent = 0;
     while ((sent+=send(self->sfd, &data[sent], l - sent, MSG_NOSIGNAL)) < l) {}
+    printf("sended string <%s> bytes: %d size %d\n", data, sent - 2, l);
+    return 0;
+}
+
+int socket_send_int(socket_t *self, const int *data, int l) {
+    int sent = 0;
+    printf("socket l: %d\n", l);
+    unsigned char size[2] = {l / 256, l % 256};  // Int to unsigned char
+    // Send 2 bytes with int length
+    printf("socket size: %u - %u\n", size[0], size[1]);
+    while ((sent+=send(self->sfd, &size[sent], 2 - sent, MSG_NOSIGNAL)) < 2) {}
+    // Send int
+    sent = 0;
+    while ((sent+=send(self->sfd, &(data[sent]), l - sent, MSG_NOSIGNAL)) < l) {}
+    printf("sent: %d bytes of int, l:%d, ints sended:", sent, l);
+    for (int i = 0; i < l; i ++) {
+        printf("%d", data[i]);
+    }
     return 0;
 }
 
@@ -111,5 +129,28 @@ int socket_read_string(socket_t *self, char **data) {
     while ((rec += recv(self->sfd, &(*data)[rec], l - rec , 0)) < l) {
         if (rec == 0) return 1;
     }
+    printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
+    return 0;
+}
+
+int socket_read_int(socket_t *self, int **data, int *l) {
+    int rec = 0;
+    unsigned char size[2];
+    // recive 2 bytes of int length
+    while ((rec += recv(self->sfd, &size[rec], 2 - rec , 0) ) < 2) {
+        if (rec == 0) {
+            return 1;
+        }
+    }
+    // recive int
+    rec = 0;
+    *l = size[0] * 256 + size[1];  // Unisgned char to int;
+    if ((*data = (int*) calloc((*l) + 1, sizeof(int))) == NULL) {
+        return 1;
+    }
+    while ((rec += recv(self->sfd, &(*data)[rec], (*l) - rec , 0)) < (*l)) {
+        if (rec == 0) return 1;
+    }
+    // printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
     return 0;
 }

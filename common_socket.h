@@ -23,7 +23,11 @@ int socket_connect(socket_t *self, const char *service, const char *port);
 
 int socket_send_string(socket_t *self, const char *data);
 
+int socket_send_int(socket_t *self, const int *data, int l);
+
 int socket_read_string(socket_t *self, char **data);
+
+int socket_read_int(socket_t *self, int **data, int *l);
 
 int socket_uninit(socket_t *self);
 

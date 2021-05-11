@@ -2,7 +2,7 @@
 #define COMMON_MATRIX_H_
 
 #include <stdlib.h>
-#include "server_mod26.h"
+#include "common_mod26.h"
 
 typedef struct matrix_t {
     mod26 **values;

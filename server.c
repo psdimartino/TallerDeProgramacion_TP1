@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     encoder hill;
     socket_t skt;
     char *input = NULL;
-    char *output;
+    int *output, l;
     encoder_create(&hill, argv[2]);
     if ( socket_init(&skt) ) {
         fprintf(stderr, "socket_init failed\n");
@@ -30,8 +30,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     while ((socket_read_string(&skt, &input)) != 1) {
+<<<<<<< Updated upstream
         encoder_encode(&hill, input, &output);
         if ( (socket_send_string(&skt, output)) == -1 ) {
+=======
+        // printf("recived: <%s>\n", input);
+        encoder_encode(&hill, input, &output, &l);
+        // printf("encoded: <%s>\n", output);
+        if ( socket_send_int(&skt, output, l) == -1 ) {
+>>>>>>> Stashed changes
             fprintf(stderr, "socket_read failed\n");
             socket_uninit(&skt);
             return 1;

@@ -12,7 +12,7 @@ typedef struct encoder_t {
 
 int encoder_create(encoder* self, string key);
 
-int encoder_encode(encoder *self, string input, string *output);
+int encoder_encode(encoder *self, string input, int **output, int *l);
 
 int encoder_destroy(encoder* self);
 
