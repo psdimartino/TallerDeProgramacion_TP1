@@ -9,56 +9,26 @@
 #define BUFFER_SIZE 64
 #define KEY_MAXLENGTH 64
 
+#define MAX_LENGTH (16*16)-1
+
 int main(int argc, char *argv[]) {
-    char *input;
-    int *output, l;
+    char input[MAX_LENGTH] = {0};
+    mod26 output[MAX_LENGTH] = {0};
     socket_t skt;
     file inputFile;
-    if ( file_create(&inputFile, argv[3]) ) {
-        fprintf(stderr, "file_create failed");
-        return 1;
-    }
-    if ( socket_init(&skt) ) {
-        fprintf(stderr, "socket_init failed");
-        return 1;
-    }
-    if ( socket_connect(&skt, argv[2]/*service*/, argv[1]/*port*/) ) {
-        fprintf(stderr, "socket_connect failed");
-        return 1;
-    }
-    while (!file_isEmpty(&inputFile)) {
-        if ( file_getLine(&inputFile, &input) ) {
-            fprintf(stderr, "file_getLine failed");
-            return 1;
-        }
-        if ( socket_send_string(&skt, input) ) {
-            fprintf(stderr, "socket_send failed");
-            socket_uninit(&skt);
-            return 1;
-        }
-        if ( socket_read_int(&skt, &output, &l) ) {
-            fprintf(stderr, "socket_send failed");
-            socket_uninit(&skt);
-            return 1;
-        }
-        printf("received bytes: %d, received ints/string: ", l);
+    file_init(&inputFile, argv[3]);
+    socket_init(&skt);
+    socket_connect(&skt, argv[2]/*service*/, argv[1]/*port*/);
+    while (file_getLine(&inputFile, input)) {
+        int l;
+        socket_send(&skt, input, strlen(input));
+        l = socket_read(&skt, (char *)&output);
         for (int i = 0; i < l; i ++) {
-            printf("%d", (int)output[i]);
-        }
-        for (int i = 0; i < l; i ++) {
-            printf("%c", mod26_getChar(output[i]));
+            printf("%c", output[i] + 'A');
         }
         printf("\n");
-        free(input);
-        free(output);
     }
-    if ( socket_uninit(&skt) ) {
-        fprintf(stderr, "socket_uninit failed");
-        return 1;
-    }
-    if ( file_destroy(&inputFile) ) {
-        fprintf(stderr, "file_destroy failed");
-        return 1;
-    }
-    return 0;
+    socket_uninit(&skt);
+    file_uninit(&inputFile);
+    return(EXIT_SUCCESS);
 }

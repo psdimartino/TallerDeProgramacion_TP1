@@ -1,33 +1,38 @@
 #include "client_file.h"
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include "common_error.h"
 
-int file_create(file *self, char *name) {
-    if (name[0] == '-') {
-        self->file = stdin;
+#define MAX_LENGTH (16*16)-1
+
+void file_init(file *this, char *name) {
+    if (strncmp(name, "-", 1) == 0) {
+      this->file = stdin;
     } else {
-        self->file = fopen(name, "r");
+        this->file = fopen(name, "r");
     }
-    if (self->file == NULL) {
-        return 1;
+    if (this->file == NULL) {
+        error_exit_msg("Error while opening file");
     }
-    return 0;
 }
 
-int file_getLine(file *self, char **output) {
-    *output = NULL;
-    int length = 0;
-    size_t size = 0;
-    if ((length = getline(output, &size, self->file)) == -1) {
-        return 1;
+// int isEmpty(file *this) {
+//     return (feof(this->file) != 0);
+// }
+
+int file_getLine(file *this, char *output) {
+    // do {
+    if (fgets(output, MAX_LENGTH, this->file) == NULL) {
+        if (errno == 0) return 0;
+        error_exit_msg("Error while reading line");
     }
-    (*output)[length-1] = '\n';
-    return 0;
+    // } while (strlen(output) == 1 && !isEmpty(this));
+    return 1;
 }
 
-int file_isEmpty(file *self) {
-    return (feof(self->file) != 0);
-}
-
-int file_destroy(file *self) {
-    return fclose(self->file);
+void file_uninit(file *this) {
+    if (fclose(this->file)) {
+        error_exit_errno("While closing file", errno);
+    }
 }

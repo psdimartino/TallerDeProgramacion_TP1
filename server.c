@@ -4,54 +4,26 @@
 #include <ctype.h>
 #include "common_socket.h"
 #include "server_encoder.h"
+#include "common_mod26.h"
+
+#define MAX_LENGTH (16*16)-1
 
 int main(int argc, char *argv[]) {
     encoder hill;
     socket_t skt;
-    char *input = NULL;
-    int *output, l;
-    encoder_create(&hill, argv[2]);
-    if ( socket_init(&skt) ) {
-        fprintf(stderr, "socket_init failed\n");
-        return 1;
+    char input[MAX_LENGTH] = {0};
+    mod26 output[MAX_LENGTH] = {0};
+    int l = 0;
+    encoder_init(&hill, argv[2]);
+    socket_init(&skt);
+    socket_bind(&skt, argv[1]/*servicename*/);
+    socket_listen(&skt);
+    socket_accept(&skt);
+    while (socket_read(&skt, input)) {
+        encoder_encode(&hill, input, output, &l);
+        socket_send(&skt, (char *)output, l);
     }
-    if ( socket_bind(&skt, argv[1]/*servicename*/) ) {
-        fprintf(stderr, "socket_bind failed\n");
-        return 1;
-    }
-    if ( socket_listen(&skt) ) {
-        fprintf(stderr, "socket_listen failed\n");
-        socket_uninit(&skt);
-        return 1;
-    }
-    if ( socket_accept(&skt) ) {
-        fprintf(stderr, "socket_accept failed\n");
-        socket_uninit(&skt);
-        return 1;
-    }
-    while ((socket_read_string(&skt, &input)) != 1) {
-<<<<<<< Updated upstream
-        encoder_encode(&hill, input, &output);
-        if ( (socket_send_string(&skt, output)) == -1 ) {
-=======
-        // printf("recived: <%s>\n", input);
-        encoder_encode(&hill, input, &output, &l);
-        // printf("encoded: <%s>\n", output);
-        if ( socket_send_int(&skt, output, l) == -1 ) {
->>>>>>> Stashed changes
-            fprintf(stderr, "socket_read failed\n");
-            socket_uninit(&skt);
-            return 1;
-        }
-        free(input);
-        free(output);
-        output = NULL;
-        input = NULL;
-    }
-    if ( socket_uninit(&skt) ) {
-        fprintf(stderr, "socket_uninit failed\n");
-        return 1;
-    }
-    encoder_destroy(&hill);
-    return 0;
+    socket_uninit(&skt);
+    encoder_uninit(&hill);
+    return(EXIT_SUCCESS);
 }

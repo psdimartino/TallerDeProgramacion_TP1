@@ -8,7 +8,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
+
 #define BUF_SIZE 32
+
+#include "common_mod26.h"
+#include "common_error.h"
 
 typedef struct Socket {
     int sfd;
@@ -16,141 +20,114 @@ typedef struct Socket {
     struct sockaddr peer_addr;
 } socket_t;
 
-int socket_init(socket_t *self ) {
-    memset(self, 0, sizeof(socket_t));
-    self->hints.ai_family = AF_INET;
-    self->hints.ai_socktype = SOCK_STREAM;
-    return 0;
+void socket_init(socket_t *this ) {
+    memset(this, 0, sizeof(socket_t));
+    this->hints.ai_family = AF_INET;
+    this->hints.ai_socktype = SOCK_STREAM;
 }
 
-int socket_connect(socket_t *self, const char *service, const char *port ) {
+void socket_connect(socket_t *this, const char *service, const char *port ) {
     struct addrinfo *result, *it;
-    if ((getaddrinfo(port, service, &self->hints, &result)) != 0) return 1;
-    for ( self->sfd = 0, it = result; it != NULL; it = it->ai_next ) {
-        self->sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-        if (self->sfd != -1) {
-            if ( connect(self->sfd, it->ai_addr, it->ai_addrlen) != -1 ) {
+    if ((getaddrinfo(port, service, &this->hints, &result)) != 0) {
+        error_exit_msg("Error in getaddrinfo");
+    }
+    for ( this->sfd = 0, it = result; it != NULL; it = it->ai_next ) {
+        this->sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+        if (this->sfd != -1) {
+            if ( connect(this->sfd, it->ai_addr, it->ai_addrlen) != -1 ) {
                 freeaddrinfo(result);
-                return 0;
-            } else { close(self->sfd); }
+                return;
+            } else { close(this->sfd); }
         }
     }
     freeaddrinfo(result);
-    return 1;
+    error_exit_msg("Error while trying to connect");
 }
 
-int socket_bind(socket_t *self, const char *port ) {
+void socket_bind(socket_t *this, const char *port ) {
     struct addrinfo *result, *it;
-    if ((getaddrinfo(NULL, port, &self->hints, &result)) != 0) return 1;
+    if ((getaddrinfo(NULL, port, &this->hints, &result)) != 0) {
+        error_exit_msg("Error in getaddrinfo");
+    }
     it = result;
-    for ( self->sfd = 0; it != NULL; it = it->ai_next ) {
-        self->sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-        if ( self->sfd != -1 ) {
-            if ( bind(self->sfd, it->ai_addr, it->ai_addrlen) == 0 ) {
-                // self->isUp = true;
+    for ( this->sfd = 0; it != NULL; it = it->ai_next ) {
+        this->sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+        if ( this->sfd != -1 ) {
+            if ( bind(this->sfd, it->ai_addr, it->ai_addrlen) == 0 ) {
                 freeaddrinfo(result);
-                return 0;
-            } else { close(self->sfd); }
+                return;
+            } else { close(this->sfd); }
         }
     }
     freeaddrinfo(result);
-    return 1;
+    error_exit_msg("Error while trying to bind");
 }
 
-int socket_accept(socket_t *self) {
+void socket_accept(socket_t *this) {
     struct sockaddr peer_addr;
     socklen_t peer_addr_len = sizeof(peer_addr);
     int cfd;
-    if ( (cfd = accept(self->sfd, &peer_addr, &peer_addr_len)) == -1 ) {
-        return 1;
+    if ( (cfd = accept(this->sfd, &peer_addr, &peer_addr_len)) == -1 ) {
+        error_exit_msg("Error while trying to accept the connection");
     }
-    close(self->sfd);
-    self->sfd = cfd;
-    return 0;
+    close(this->sfd);
+    this->sfd = cfd;
 }
 
-int socket_listen(socket_t *self ) {
-    if ( listen(self->sfd, 10) == -1 ) {
-        return 1;
+void socket_listen(socket_t *this ) {
+    if ( listen(this->sfd, 10) == -1 ) {
+        error_exit_msg("Error while trying to listen");
     }
-    return 0;
 }
 
-int socket_uninit(socket_t *self ) {
-    close(self->sfd);
-    self->sfd = -1;
-    return 0;
+void socket_uninit(socket_t *this ) {
+    close(this->sfd);
+    this->sfd = -1;
 }
 
-int socket_send_string(socket_t *self, const char *data) {
-    int sent = 0, l = strlen(data);
-    unsigned char size[2] = {l / 256, l % 256};  // Int to unsigned char
-    // Send 2 bytes with string length
-    while ((sent+=send(self->sfd, &size[sent], 2 - sent, MSG_NOSIGNAL)) < 2) {}
-    // Send string
-    sent = 0;
-    while ((sent+=send(self->sfd, &data[sent], l - sent, MSG_NOSIGNAL)) < l) {}
-    printf("sended string <%s> bytes: %d size %d\n", data, sent - 2, l);
-    return 0;
-}
-
-int socket_send_int(socket_t *self, const int *data, int l) {
+void socket_send(socket_t *this, const char *data, int l) {
     int sent = 0;
-    printf("socket l: %d\n", l);
-    unsigned char size[2] = {l / 256, l % 256};  // Int to unsigned char
-    // Send 2 bytes with int length
-    printf("socket size: %u - %u\n", size[0], size[1]);
-    while ((sent+=send(self->sfd, &size[sent], 2 - sent, MSG_NOSIGNAL)) < 2) {}
-    // Send int
-    sent = 0;
-    while ((sent+=send(self->sfd, &(data[sent]), l - sent, MSG_NOSIGNAL)) < l) {}
-    printf("sent: %d bytes of int, l:%d, ints sended:", sent, l);
-    for (int i = 0; i < l; i ++) {
-        printf("%d", data[i]);
+    unsigned char size[2] = {l / 256, l % 256};
+    while (sent < (l + 2)) {
+        if (sent == 0) sent += send(this->sfd, &size[0], 1, MSG_NOSIGNAL);
+        else if (sent == 1) sent += send(this->sfd, &size[1], 1, MSG_NOSIGNAL);
+        else if (sent > 1)
+            sent += send(this->sfd, &data[sent-2], l + 2 - sent, MSG_NOSIGNAL);
     }
-    return 0;
+    // printf("SENDING<%d>:\n", l);
+    // for (int i = 0; i < l; i ++) {
+    //     printf("%u ", data[i] );
+    // }
+    // printf("\n");
+    // for (int i = 0; i < l; i ++) {
+    //     printf("%c", data[i] );
+    // }
+    // printf("\n");
 }
 
-int socket_read_string(socket_t *self, char **data) {
-    int rec = 0, l;
+int socket_read(socket_t *this, char *data) {
     unsigned char size[2];
-    // recive 2 bytes of string length
-    while ((rec += recv(self->sfd, &size[rec], 2 - rec , 0) ) < 2) {
-        if (rec == 0) {
-            return 1;
+    int l, read = l = 0;
+    while (read < (l + 2)) {
+        if (read == 0) {
+            read += recv(this->sfd, &size[0], 1, MSG_NOSIGNAL);
+            if (!read) return 0;
+        } else if (read == 1) {
+            read += recv(this->sfd, &size[1], 1, MSG_NOSIGNAL);
+            l = size[0] * 256 + size[1];
+        } else if (read > 1) {
+            read += recv(this->sfd, &data[read-2], l + 2 - read, MSG_NOSIGNAL);
         }
     }
-    // recive string
-    rec = 0;
-    l = size[0] * 256 + size[1];  // Unisgned char to int;
-    if ((*data = (char*) calloc(l + 1, sizeof(char))) == NULL) {
-        return 1;
-    }
-    while ((rec += recv(self->sfd, &(*data)[rec], l - rec , 0)) < l) {
-        if (rec == 0) return 1;
-    }
-    printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
-    return 0;
-}
-
-int socket_read_int(socket_t *self, int **data, int *l) {
-    int rec = 0;
-    unsigned char size[2];
-    // recive 2 bytes of int length
-    while ((rec += recv(self->sfd, &size[rec], 2 - rec , 0) ) < 2) {
-        if (rec == 0) {
-            return 1;
-        }
-    }
-    // recive int
-    rec = 0;
-    *l = size[0] * 256 + size[1];  // Unisgned char to int;
-    if ((*data = (int*) calloc((*l) + 1, sizeof(int))) == NULL) {
-        return 1;
-    }
-    while ((rec += recv(self->sfd, &(*data)[rec], (*l) - rec , 0)) < (*l)) {
-        if (rec == 0) return 1;
-    }
-    // printf("recived string <%s> bytes: %d size %d\n", *data, rec-2, l);
-    return 0;
+    data[l] = '\0';
+    // printf("READED<%d>:\n", read-2);
+    // for (int i = 0; i < l; i ++) {
+    //     printf("%u ", data[i] );
+    // }
+    // printf("\n");
+    // for (int i = 0; i < l; i ++) {
+    //     printf("%c", data[i] );
+    // }
+    // printf("\n");
+    return l;
 }

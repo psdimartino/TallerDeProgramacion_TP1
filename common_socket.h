@@ -11,30 +11,28 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "common_mod26.h"
+
 typedef struct Socket{
     int sfd;
     struct addrinfo hints;
     struct sockaddr peer_addr;
 } socket_t;
 
-int socket_init(socket_t *self);
+void socket_init(socket_t *this);
 
-int socket_connect(socket_t *self, const char *service, const char *port);
+void socket_connect(socket_t *this, const char *service, const char *port);
 
-int socket_send_string(socket_t *self, const char *data);
+void socket_send(socket_t *this, const char *data, int l);
 
-int socket_send_int(socket_t *self, const int *data, int l);
+int socket_read(socket_t *this, char *data);
 
-int socket_read_string(socket_t *self, char **data);
+void socket_uninit(socket_t *this);
 
-int socket_read_int(socket_t *self, int **data, int *l);
+void socket_bind(socket_t *this, const char *port);
 
-int socket_uninit(socket_t *self);
+void socket_accept(socket_t *this);
 
-int socket_bind(socket_t *self, const char *port);
-
-int socket_accept(socket_t *self);
-
-int socket_listen(socket_t *self);
+void socket_listen(socket_t *this);
 
 #endif

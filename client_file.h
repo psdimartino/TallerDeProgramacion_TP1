@@ -6,12 +6,10 @@ typedef struct file_t {
     FILE *file;
 } file;  
 
-int file_create(file *self, char *name);
+void file_init(file *this, char *name);
 
-int file_getLine(file *self, char **output);
+int file_getLine(file *this, char *output);
 
-int file_isEmpty(file *self);
-
-int file_destroy(file *self);
+void file_uninit(file *this);
 
 #endif  // CLIENT_FILE_H_

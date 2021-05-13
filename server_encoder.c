@@ -5,39 +5,17 @@
 #include "server_encoder.h"
 #include "server_matrix.h"
 #include "common_mod26.h"
+#include "common_error.h"
 
 #define MAX_LEN 16
-#define ROUND_UP(A, B) (A - (A % B) + B)
+#define ROUND_UP(A, B) ((A + B - 1) / B) * B
+#define MIN(A, B) ((A) < (B) ? (A) : (B))
 
-void encoder_setMatrixWithString(matrix mat, string input) {
-    int key_pos = 0;
-    int input_len = strlen((char *)input);
-    for (int i = 0; i < mat.x; i++) {
-        for (int j = 0; j < mat.y; j++, key_pos++) {
-            if (key_pos < input_len) {
-                matrix_set(&mat, i, j, mod26_createFromChar(input[key_pos]));
-            } else {
-                matrix_set(&mat, i, j, mod26_create(0));
-            }
-        }
-    }
+void encoder_init(encoder* this, char* key) {
+    this->vector_len = sqrt(strlen(key));
+    matrix_init(&(this->key), this->vector_len, this->vector_len);
+    matrix_setFromArray(&(this->key), key, strlen((char *)key));
 }
-
-int encoder_create(encoder* self, string key) {
-    self->vector_len = sqrt(strlen((char *)key));
-    matrix_create(&(self->key), self->vector_len, self->vector_len);
-    encoder_setMatrixWithString(self->key, key);
-    return 0;
-}
-
-// void encoder_getStringFromMatrix(string output, matrix input) {
-//     int key_pos = 0;
-//     for (int i = 0; i < input.x; i++) {
-//         for (int j = 0; j < input.y; j++, key_pos++) {
-//             output[key_pos] = mod26_getChar(matrix_get(input, i, j));
-//         }
-//     }
-// }
 
 void curateInput(char *input) {
     int next = 0, i = 0;
@@ -49,31 +27,29 @@ void curateInput(char *input) {
     input[next] = '\0';
 }
 
-int encoder_encode(encoder *self, string input, int **output, int *l) {
-    matrix inputVector, outputVector;
+void encoder_encode(encoder *this, char* input, mod26 *output, int *l) {
+    matrix inputVector, resultVector;
     curateInput(input);
-<<<<<<< Updated upstream
-=======
-    printf("INPUT <%s>\n", input);
-    *l = ROUND_UP(strlen(input), self->vector_len);
-    matrix_create(&inputVector, self->vector_len, 1);
-    *output = calloc(*l, sizeof(int));
-    // printf("input <%s>, len = %lu\n", input, strlen(input));
->>>>>>> Stashed changes
-    for (int i = 0; i < strlen(input); i+=self->vector_len) {
-        encoder_setMatrixWithString(inputVector, &input[i]);
-        matrix_multiply(&outputVector, self->key, inputVector);
-        for (int j = i % self->vector_len; j < self->vector_len; j++) {
-            (*output)[i + j] = matrix_get(outputVector, j , 0);
-            // printf("i:[%d] j: [%d]=%d\n", i, j, (*output)[i + j]);
+    int inputLen = strlen(input);
+
+    // Set size of output
+    *l = ROUND_UP(inputLen, this->vector_len);
+    // printf("ROUND UP(%d, %d) = %d", inputLen, this->vector_len, *l);
+    matrix_init(&inputVector, this->vector_len, 1);
+
+    for (int i = 0; i < inputLen; i+=this->vector_len) {
+        matrix_setFromArray(&inputVector, &input[i],
+                             MIN(this->vector_len, inputLen - i));
+        matrix_multiply(&resultVector, this->key, inputVector);
+        for (int j = i % this->vector_len; j < this->vector_len; j++) {
+            output[i + j] = matrix_get(resultVector, j , 0);
         }
-        matrix_delete(&outputVector);
-        // printf("out i:[%d]\n", i);
+        matrix_uninit(&resultVector);
     }
-    matrix_delete(&inputVector);
-    return 0;
+    matrix_uninit(&inputVector);
+    output[*l] = '\0';
 }
 
-int encoder_destroy(encoder* self) {
-    return matrix_delete(&(self->key));
+void encoder_uninit(encoder* this) {
+    matrix_uninit(&(this->key));
 }

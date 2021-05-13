@@ -2,18 +2,17 @@
 #define SERVER_ENCODER_H_
 #include <stdlib.h>
 #include "server_matrix.h"
-
-typedef char* string;
+#include "common_mod26.h"
 
 typedef struct encoder_t {
     matrix key;
     int vector_len;
 } encoder;  
 
-int encoder_create(encoder* self, string key);
+void encoder_init(encoder* this, char* key);
 
-int encoder_encode(encoder *self, string input, int **output, int *l);
+void encoder_encode(encoder *this, char* input, mod26 *output, int *l);
 
-int encoder_destroy(encoder* self);
+void encoder_uninit(encoder* this);
 
 #endif  // SERVER_ENCODER_H_
