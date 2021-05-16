@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -9,16 +8,9 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define BUF_SIZE 32
-
+#include "common_socket.h"
 #include "common_mod26.h"
 #include "common_error.h"
-
-typedef struct Socket {
-    int sfd;
-    struct addrinfo hints;
-    struct sockaddr peer_addr;
-} socket_t;
 
 void socket_init(socket_t *this ) {
     memset(this, 0, sizeof(socket_t));
@@ -85,49 +77,30 @@ void socket_uninit(socket_t *this ) {
     this->sfd = -1;
 }
 
-void socket_send(socket_t *this, const char *data, int l) {
-    int sent = 0;
-    unsigned char size[2] = {l / 256, l % 256};
+void socket_send(socket_t *this, const char *data, uint16_t l) {
+    uint8_t l_net[2] = {htons(l) % 256, htons(l) / 256};
+    uint16_t sent = 0;
     while (sent < (l + 2)) {
-        if (sent == 0) sent += send(this->sfd, &size[0], 1, MSG_NOSIGNAL);
-        else if (sent == 1) sent += send(this->sfd, &size[1], 1, MSG_NOSIGNAL);
-        else if (sent > 1)
-            sent += send(this->sfd, &data[sent-2], l + 2 - sent, MSG_NOSIGNAL);
+        if (sent < 2) {
+            sent += send(this->sfd, &l_net[sent], 2 - sent, MSG_NOSIGNAL);
+        } else {
+            sent += send(this->sfd, &data[sent-2], l - (sent-2), MSG_NOSIGNAL);
+        }
     }
-    // printf("SENDING<%d>:\n", l);
-    // for (int i = 0; i < l; i ++) {
-    //     printf("%u ", data[i] );
-    // }
-    // printf("\n");
-    // for (int i = 0; i < l; i ++) {
-    //     printf("%c", data[i] );
-    // }
-    // printf("\n");
 }
 
-int socket_read(socket_t *this, char *data) {
-    unsigned char size[2];
-    int l, read = l = 0;
+uint16_t socket_read(socket_t *this, char *data) {
+    uint8_t l_net[2];
+    uint16_t l = 0, read = 0;
     while (read < (l + 2)) {
-        if (read == 0) {
-            read += recv(this->sfd, &size[0], 1, MSG_NOSIGNAL);
+        if (read < 2) {
+            read += recv(this->sfd, &l_net[read], 2 - read, MSG_NOSIGNAL);
+            if (read == 2) l = ntohs(l_net[1] * 256 + l_net[0]);
             if (!read) return 0;
-        } else if (read == 1) {
-            read += recv(this->sfd, &size[1], 1, MSG_NOSIGNAL);
-            l = size[0] * 256 + size[1];
-        } else if (read > 1) {
-            read += recv(this->sfd, &data[read-2], l + 2 - read, MSG_NOSIGNAL);
+        } else {
+            read += recv(this->sfd, &data[read-2], l - (read-2), MSG_NOSIGNAL);
         }
     }
     data[l] = '\0';
-    // printf("READED<%d>:\n", read-2);
-    // for (int i = 0; i < l; i ++) {
-    //     printf("%u ", data[i] );
-    // }
-    // printf("\n");
-    // for (int i = 0; i < l; i ++) {
-    //     printf("%c", data[i] );
-    // }
-    // printf("\n");
     return l;
 }

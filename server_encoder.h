@@ -1,6 +1,8 @@
 #ifndef SERVER_ENCODER_H_
 #define SERVER_ENCODER_H_
+
 #include <stdlib.h>
+
 #include "server_matrix.h"
 #include "common_mod26.h"
 
@@ -9,9 +11,9 @@ typedef struct encoder_t {
     int vector_len;
 } encoder;  
 
-void encoder_init(encoder* this, char* key);
+void encoder_init(encoder* this, const char* key);
 
-void encoder_encode(encoder *this, char* input, mod26 *output, int *l);
+void encoder_encode(encoder *this, char* input, mod26 *output, uint16_t *l);
 
 void encoder_uninit(encoder* this);
 

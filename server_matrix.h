@@ -2,6 +2,7 @@
 #define SERVER_MATRIX_H_
 
 #include <stdlib.h>
+
 #include "common_mod26.h"
 
 #define MATRIX_MAX_SIZE 4

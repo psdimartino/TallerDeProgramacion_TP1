@@ -2,19 +2,19 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "server_encoder.h"
 #include "server_matrix.h"
 #include "common_mod26.h"
 #include "common_error.h"
 
-#define MAX_LEN 16
 #define ROUND_UP(A, B) ((A + B - 1) / B) * B
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 
-void encoder_init(encoder* this, char* key) {
+void encoder_init(encoder* this, const char* key) {
     this->vector_len = sqrt(strlen(key));
     matrix_init(&(this->key), this->vector_len, this->vector_len);
-    matrix_setFromArray(&(this->key), key, strlen((char *)key));
+    matrix_setFromArray(&(this->key), key, strlen(key));
 }
 
 void curateInput(char *input) {
@@ -27,14 +27,12 @@ void curateInput(char *input) {
     input[next] = '\0';
 }
 
-void encoder_encode(encoder *this, char* input, mod26 *output, int *l) {
+void encoder_encode(encoder *this, char* input, mod26 *output, uint16_t *l) {
     matrix inputVector, resultVector;
     curateInput(input);
     int inputLen = strlen(input);
 
-    // Set size of output
     *l = ROUND_UP(inputLen, this->vector_len);
-    // printf("ROUND UP(%d, %d) = %d", inputLen, this->vector_len, *l);
     matrix_init(&inputVector, this->vector_len, 1);
 
     for (int i = 0; i < inputLen; i+=this->vector_len) {
@@ -46,8 +44,8 @@ void encoder_encode(encoder *this, char* input, mod26 *output, int *l) {
         }
         matrix_uninit(&resultVector);
     }
-    matrix_uninit(&inputVector);
     output[*l] = '\0';
+    matrix_uninit(&inputVector);
 }
 
 void encoder_uninit(encoder* this) {
